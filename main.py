@@ -54,12 +54,13 @@ if __name__ == '__main__':
         blurred_image_path = os.path.join(args.blurred_images_dir, image_name)
         blurred_image = read_image_to_torch(blurred_image_path)
         blurred_image = blurred_image.to(device)
+        blurred_image_shape = blurred_image.size()
 
         # Gx
         Gx = EncoderDecoder().to(device)
 
         # Gk
-        Gk = FCN().to(device)
+        Gk = FCN(args.kernel_size[0],args.kernel_size[1]).to(device)
 
         # optimizer
         optimizer = torch.optim.Adam([{'params': Gx.parameters()}, {'params': Gk.parameters(), 'lr': 1e-4}], lr=0.01)
@@ -69,11 +70,11 @@ if __name__ == '__main__':
         mse = nn.MSELoss()
 
         # random x and k
-        uniform_random_x = torch.rand((8, 710, 1054)).unsqueeze(0).to(device)
+        input_channels = 8
+        uniform_random_x = torch.rand((input_channels, blurred_image_shape[2] + args.kernel_size[0] - 1, blurred_image_shape[3] + args.kernel_size[1] - 1)).unsqueeze(0).to(device)
         uniform_random_k = torch.rand((200)).to(device)
-
         reg = 0.0001
-        for i in range(1000):
+        for i in range(5000):
             optimizer.zero_grad()
             # add noise
             input_x = uniform_random_x + reg * torch.zeros(uniform_random_x.shape).type_as(uniform_random_x.data).normal_()

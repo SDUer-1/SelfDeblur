@@ -68,24 +68,31 @@ class SkipConnection(nn.Module):
 
 # Gx
 class EncoderDecoder(nn.Module):
-    def __init__(self, ):
+    def __init__(self, input_channels=8, encoder_channels=[128,128,128,128,128], decoder_channels=[128,128,128,128,128], skip_channels=[16,16,16,16,16]):
+        '''
+
+        :param input_channels: channels of input
+        :param encoder_channels: list of channels in encoders
+        :param decoder_channels: list of channels in decoders
+        :param skip_channels: list of channels in skip connections
+        '''
         super(EncoderDecoder, self).__init__()
-        self.encoder_1 = EncoderUnit(8, 128, 128, 128)
-        self.encoder_2 = EncoderUnit(128, 128, 128, 128)
-        self.encoder_3 = EncoderUnit(128, 128, 128, 128)
-        self.encoder_4 = EncoderUnit(128, 128, 128, 128)
-        self.encoder_5 = EncoderUnit(128, 128, 128, 128)
-        self.decoder_5 = DecoderUnit(128, 128, 128, 128)
-        self.decoder_4 = DecoderUnit(144, 128, 128, 128)
-        self.decoder_3 = DecoderUnit(144, 128, 128, 128)
-        self.decoder_2 = DecoderUnit(144, 128, 128, 128)
-        self.decoder_1 = DecoderUnit(144, 128, 128, 128)
-        self.skipconnection_1 = SkipConnection(8, 16)
-        self.skipconnection_2 = SkipConnection(128, 16)
-        self.skipconnection_3 = SkipConnection(128, 16)
-        self.skipconnection_4 = SkipConnection(128, 16)
-        self.skipconnection_5 = SkipConnection(128, 16)
-        self.final_conv = nn.Conv2d(144, 1, (1, 1), padding=0)
+        self.encoder_1 = EncoderUnit(input_channels, encoder_channels[0], encoder_channels[0], encoder_channels[1])
+        self.encoder_2 = EncoderUnit(encoder_channels[1], encoder_channels[1], encoder_channels[1], encoder_channels[2])
+        self.encoder_3 = EncoderUnit(encoder_channels[2], encoder_channels[2], encoder_channels[2], encoder_channels[3])
+        self.encoder_4 = EncoderUnit(encoder_channels[3], encoder_channels[3], encoder_channels[3], encoder_channels[4])
+        self.encoder_5 = EncoderUnit(encoder_channels[4], encoder_channels[4], encoder_channels[4], decoder_channels[0])
+        self.decoder_5 = DecoderUnit(decoder_channels[0], decoder_channels[0], decoder_channels[0], decoder_channels[1])
+        self.decoder_4 = DecoderUnit(decoder_channels[1] + skip_channels[0], decoder_channels[1], decoder_channels[1], decoder_channels[2])
+        self.decoder_3 = DecoderUnit(decoder_channels[2] + skip_channels[1], decoder_channels[2], decoder_channels[2], decoder_channels[3])
+        self.decoder_2 = DecoderUnit(decoder_channels[3] + skip_channels[2], decoder_channels[3], decoder_channels[3], decoder_channels[4])
+        self.decoder_1 = DecoderUnit(decoder_channels[4] + skip_channels[3], decoder_channels[4], decoder_channels[4], decoder_channels[4])
+        self.skipconnection_1 = SkipConnection(input_channels, skip_channels[0])
+        self.skipconnection_2 = SkipConnection(encoder_channels[1], skip_channels[1])
+        self.skipconnection_3 = SkipConnection(encoder_channels[2], skip_channels[2])
+        self.skipconnection_4 = SkipConnection(encoder_channels[3], skip_channels[3])
+        self.skipconnection_5 = SkipConnection(encoder_channels[4], skip_channels[4])
+        self.final_conv = nn.Conv2d(decoder_channels[4] + skip_channels[4], 1, (1, 1), padding=0)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -122,12 +129,17 @@ class EncoderDecoder(nn.Module):
 
 # Gk
 class FCN(nn.Module):
-  def __init__(self):
+  def __init__(self, m_k, n_k):
+    '''
+
+    :param m_k: shape[0] of kernel
+    :param n_k: shape[1] of kernel
+    '''
     super(FCN, self).__init__()
     self.net = nn.Sequential(
         nn.Linear(200, 1000),
         nn.ReLU(),
-        nn.Linear(1000,961),
+        nn.Linear(1000,m_k * n_k),
         nn.Softmax()
     )
   def forward(self, input):
