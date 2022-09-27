@@ -35,11 +35,11 @@ def read_image_to_torch(img_path, gray_scale=True):
     img = cv2.imread(img_path)
   img_shape_0 = img.shape[0]
   img_shape_1 = img.shape[1]
+
   if gray_scale:
     torch_img = torch.from_numpy(img).view(1, img_shape_0, img_shape_1).float() / 255
   else:
-    img_channels = img.shape[2]
-    torch_img = torch.from_numpy(img).view(img_channels, img_shape_0, img_shape_1).float() / 255
+    torch_img = torch.from_numpy(img).permute(2,0,1).float() / 255
 
   return torch_img.unsqueeze(0)
 
@@ -47,7 +47,7 @@ def torch_to_np_save_image(save_path, img):
   '''
   turn the image to np and save
   :param save_path: the path of saved image
-  :param img: image to save (torch) in shape [B, C, H, W]
+  :param img: image to save (torch) in shape [C, H, W]
   :return: None
   '''
 
@@ -55,3 +55,20 @@ def torch_to_np_save_image(save_path, img):
   img = img.permute(0,2,3,1)
   img_np = img.squeeze().detach().cpu().numpy() * 255
   cv2.imwrite(save_path, img_np)
+
+def sample_from_distribution(channels, size, var=0.1, distribution='uniform'):
+  '''
+  sample tensors in given shape from given distribution
+  :param channels: channels in sampling tensor: C
+  :param size: spatial size of the sampling tensor: [H, W]
+  :param distribution: 'uniform' or 'normal'
+  :param var: std scaler
+  :return: sampling tensor in shape [1, C, H, W]
+  '''
+  if distribution == 'uniform':
+    sampling_tensor = torch.rand((channels, size[0], size[1]))
+  elif distribution == 'normal':
+    sampling_tensor = torch.randn((channels, size[0], size[1]))
+
+  sampling_tensor = sampling_tensor * var
+  return sampling_tensor.unsqueeze(0)

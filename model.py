@@ -129,7 +129,7 @@ class EncoderDecoder(nn.Module):
 
 # Gk
 class FCN(nn.Module):
-  def __init__(self, m_k, n_k):
+  def __init__(self, input_number, m_k, n_k):
     '''
 
     :param m_k: shape[0] of kernel
@@ -137,7 +137,7 @@ class FCN(nn.Module):
     '''
     super(FCN, self).__init__()
     self.net = nn.Sequential(
-        nn.Linear(200, 1000),
+        nn.Linear(input_number, 1000),
         nn.ReLU(),
         nn.Linear(1000,m_k * n_k),
         nn.Softmax()
