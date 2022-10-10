@@ -1,7 +1,7 @@
 import os
 import cv2
 from skimage.metrics import peak_signal_noise_ratio as compare_psnr
-from skimage.measure import compare_ssim
+from skimage.metrics import structural_similarity as compare_ssim
 
 if __name__ == '__main__':
 

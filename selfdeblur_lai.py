@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from model import EncoderDecoder, FCN
 from utils import *
+from SSIM import SSIMLoss
 
 # If there's a GPU available...
 if torch.cuda.is_available():
@@ -90,6 +91,7 @@ if __name__ == '__main__':
 
         # Loss
         mse = nn.MSELoss()
+        ssim = SSIMLoss()
 
         # random x and k
         input_channels = 8
@@ -98,6 +100,7 @@ if __name__ == '__main__':
         sampling_k = sample_from_distribution(Gk_input_size, [1,1]).squeeze().to(device)
         reg = 0.0001
         for i in tqdm(range(args.iterations)):
+            scheduler.step(i)
             optimizer.zero_grad()
             # add noise
             noise = sample_from_distribution(input_channels, sampling_tensor_size, var=1).to(device)
@@ -111,7 +114,10 @@ if __name__ == '__main__':
 
             out_y = nn.functional.conv2d(out_x, out_k_r, bias=None)
 
-            total_loss = mse(out_y, blurred_image)
+            if i < 500:
+                total_loss = mse(out_y, blurred_image)
+            else:
+                total_loss = 1 - ssim(out_y, blurred_image)
 
             total_loss.backward()
             optimizer.step()

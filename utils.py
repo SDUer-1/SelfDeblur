@@ -1,5 +1,6 @@
 import cv2
 import torch
+import numpy as np
 
 def change_dimension(tensor_1, tensor_2):
   '''
@@ -72,3 +73,22 @@ def sample_from_distribution(channels, size, var=0.1, distribution='uniform'):
 
   sampling_tensor = sampling_tensor * var
   return sampling_tensor.unsqueeze(0)
+
+
+def gaussian_kernel(size, sigma, channels=1):
+  '''
+  generate a gaussian kernel
+  :param size: size of the gaussian kernel: S
+  :param sigma: sigma of the gaussian kernel: sig
+  :param channels: number of channels in the gaussian kernel: C
+  :return: Variable gaussian kernel with shape [C,1,S,S]
+  '''
+  X = np.linspace(-3 * sigma, 3 * sigma, size)
+  Y = np.linspace(-3 * sigma, 3 * sigma, size)
+  x, y = np.meshgrid(X, Y)
+  gauss_unnorm = 1 / (2 * np.pi * sigma ** 2) * np.exp(- (x ** 2 + y ** 2) / (2 * sigma ** 2))
+  Z = gauss_unnorm.sum()
+  gauss_kernel = (1 / Z) * gauss_unnorm
+  gauss_kernel = torch.tensor(gauss_kernel).float().unsqueeze(0).unsqueeze(0)
+  gauss_kernel = gauss_kernel.expand(channels, 1, size, size).contiguous()
+  return torch.autograd.Variable(gauss_kernel)
