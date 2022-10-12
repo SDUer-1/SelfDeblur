@@ -137,8 +137,8 @@ class FCN(nn.Module):
     '''
     super(FCN, self).__init__()
     self.net = nn.Sequential(
-        nn.Linear(input_number, 1000),
-        nn.ReLU(),
+        nn.Linear(input_number, 1000, bias=True),
+        nn.ReLU6(),
         nn.Linear(1000,m_k * n_k),
         nn.Softmax()
     )

@@ -98,13 +98,14 @@ if __name__ == '__main__':
         sampling_tensor_size = [blurred_image_shape[2] + kernel_size[0] - 1, blurred_image_shape[3] + kernel_size[1] - 1]
         sampling_x = sample_from_distribution(input_channels, sampling_tensor_size).to(device)
         sampling_k = sample_from_distribution(Gk_input_size, [1,1]).squeeze().to(device)
-        reg = 0.0001
+        reg = 0.001
         for i in tqdm(range(args.iterations)):
+            # add noise
+            noise = sample_from_distribution(input_channels, sampling_tensor_size, var=1, distribution='normal').to(device)
+            input_x = sampling_x + reg * noise
+
             scheduler.step(i)
             optimizer.zero_grad()
-            # add noise
-            noise = sample_from_distribution(input_channels, sampling_tensor_size, var=1).to(device)
-            input_x = sampling_x + reg * noise
 
             # get the network output
             out_x = Gx(input_x)

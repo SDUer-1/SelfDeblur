@@ -11,6 +11,7 @@ if __name__ == '__main__':
 
     deblurred_imgs_list = os.listdir(deblurred_results_x_path)
     for deblurred_img_name in deblurred_imgs_list:
+        print(deblurred_img_name)
         deblurred_img_path = os.path.join(deblurred_results_x_path, deblurred_img_name)
         gt_img_name = deblurred_img_name.split('_')[0] + '_' + deblurred_img_name.split('_')[1] + '.png'
         gt_img_path = os.path.join(grount_truth_path, gt_img_name)
@@ -23,3 +24,4 @@ if __name__ == '__main__':
         ssim = compare_ssim(deblurred_img, gt_img_Y)
         print(psnr)
         print(ssim)
+
