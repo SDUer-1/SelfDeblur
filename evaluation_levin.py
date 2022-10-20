@@ -34,33 +34,30 @@ def align_image(result_img, ground_img, max_shift=5):
 
 if __name__ == '__main__':
 
-    grount_truth_path = './datasets/lai/ground_truth'
-    deblurred_results_x_path = './deblurred_results/lai/x'
-    deblurred_results_k_path = './deblurred_results/lai/k'
+    grount_truth_path = './datasets/levin/groundtruth'
+    deblurred_results_x_path = './deblurred_results/levin/x'
+    deblurred_results_k_path = './deblurred_results/levin/k'
 
     deblurred_imgs_list = os.listdir(deblurred_results_x_path)
-    psnr_results = defaultdict(list)
-    ssim_results = defaultdict(list)
+    psnr_results = []
+    ssim_results = []
     for deblurred_img_name in deblurred_imgs_list:
         print(deblurred_img_name)
         category = deblurred_img_name.split('_')[0]
 
         deblurred_img_path = os.path.join(deblurred_results_x_path, deblurred_img_name)
-        gt_img_name = deblurred_img_name.split('_')[0] + '_' + deblurred_img_name.split('_')[1] + '.png'
+        gt_img_name = deblurred_img_name.split('_')[0] + '.png'
         gt_img_path = os.path.join(grount_truth_path, gt_img_name)
 
         deblurred_img = cv2.imread(deblurred_img_path, cv2.IMREAD_GRAYSCALE)
-        gt_img = cv2.imread(gt_img_path)
-        gt_img_Y = cv2.cvtColor(gt_img, cv2.COLOR_BGR2YCrCb)[:,:,0]
+        gt_img = cv2.imread(gt_img_path, cv2.IMREAD_GRAYSCALE)
 
-        shift_deblurred_img, shift_gt = align_image(deblurred_img, gt_img_Y)
+        shift_deblurred_img, shift_gt = align_image(deblurred_img, gt_img)
 
         psnr = compare_psnr(shift_deblurred_img, shift_gt, data_range=255)
         ssim = compare_ssim(shift_deblurred_img, shift_gt)
-        psnr_results[category].append(psnr)
-        ssim_results[category].append(ssim)
+        psnr_results.append(psnr)
+        ssim_results.append(ssim)
 
-    for category, psnrs in psnr_results.items():
-        print("Average PSNR for %s: %s" %(category, np.mean(psnrs)))
-    for category, ssims in ssim_results.items():
-        print("Average SSIM for %s: %s" %(category, np.mean(ssims)))
+    print("Average PSNR: ", np.mean(psnr_results))
+    print("Average SSIM: ", np.mean(ssim_results))
