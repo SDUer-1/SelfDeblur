@@ -145,3 +145,23 @@ class FCN(nn.Module):
   def forward(self, input):
 
     return self.net(input)
+
+class Noise(nn.Module):
+    def __init__(self, input_number, m_n, n_n):
+        '''
+
+        :param m_n: shape[0] of the deblurred image
+        :param n_n: shape[1] of the deblurred image
+        '''
+        super(Noise, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_number, 1000, bias=True),
+            nn.ReLU6(),
+            nn.Linear(1000, 10000),
+            nn.ReLU6(),
+            nn.Linear(10000, m_n * n_n),
+            nn.Sigmoid()
+        )
+
+    def forward(self, input):
+        return self.net(input)

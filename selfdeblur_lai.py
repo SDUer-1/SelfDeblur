@@ -6,7 +6,7 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import MultiStepLR
 from tqdm import tqdm
 
-from model import EncoderDecoder, FCN
+from model import EncoderDecoder, FCN, Noise
 from utils import *
 from SSIM import SSIMLoss
 
@@ -77,6 +77,9 @@ if __name__ == '__main__':
         padh = (kernel_size[0] - 1) // 2
         padw = (kernel_size[1] - 1) // 2
 
+        # Gn
+        Gn_input_size = 500
+        Gn = Noise(Gn_input_size,blurred_image_shape[0],blurred_image_shape[1]).to(device)
 
         # Gx
         Gx = EncoderDecoder().to(device)
@@ -86,7 +89,7 @@ if __name__ == '__main__':
         Gk = FCN(Gk_input_size, kernel_size[0],kernel_size[1]).to(device)
 
         # optimizer
-        optimizer = torch.optim.Adam([{'params': Gx.parameters()}, {'params': Gk.parameters(), 'lr': 1e-4}], lr=0.01)
+        optimizer = torch.optim.Adam([{'params': Gx.parameters()}, {'params': Gk.parameters(), 'lr': 1e-4}, {'params': Gn.parameters()}], lr=0.01)
         scheduler = MultiStepLR(optimizer, milestones=[2000, 3000, 4000], gamma=0.5)
 
         # Loss
@@ -98,11 +101,11 @@ if __name__ == '__main__':
         sampling_tensor_size = [blurred_image_shape[2] + kernel_size[0] - 1, blurred_image_shape[3] + kernel_size[1] - 1]
         sampling_x = sample_from_distribution(input_channels, sampling_tensor_size).to(device)
         sampling_k = sample_from_distribution(Gk_input_size, [1,1]).squeeze().to(device)
-        reg = 0.001
+        sampling_n = sample_from_distribution(Gn_input_size, [1,1]).squeeze().to(device)
+
         for i in tqdm(range(args.iterations)):
             # add noise
-            noise = sample_from_distribution(input_channels, sampling_tensor_size, var=1, distribution='normal').to(device)
-            input_x = sampling_x + reg * noise
+            input_x = sampling_x
 
             scheduler.step(i)
             optimizer.zero_grad()
@@ -110,15 +113,16 @@ if __name__ == '__main__':
             # get the network output
             out_x = Gx(input_x)
             out_k = Gk(sampling_k)
+            noise = Gn(sampling_n)
 
             out_k_r = out_k.view(-1, 1, kernel_size[0], kernel_size[1])
 
-            out_y = nn.functional.conv2d(out_x, out_k_r, bias=None)
+            out_y = nn.functional.conv2d(out_x, out_k_r, bias=None) + noise
 
             if i < 500:
                 total_loss = mse(out_y, blurred_image)
             else:
-                total_loss = 1 - ssim(out_y, blurred_image)
+                total_loss = 0.5 * (1 - ssim(out_y, blurred_image)) + 0.5 * mse(out_y, blurred_image)
 
             total_loss.backward()
             optimizer.step()
