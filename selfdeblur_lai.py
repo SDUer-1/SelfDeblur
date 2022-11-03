@@ -101,7 +101,7 @@ if __name__ == '__main__':
         sampling_tensor_size = [blurred_image_shape[2] + kernel_size[0] - 1, blurred_image_shape[3] + kernel_size[1] - 1]
         sampling_x = sample_from_distribution(input_channels, sampling_tensor_size).to(device)
         sampling_k = sample_from_distribution(Gk_input_size, [1,1]).squeeze().to(device)
-        sampling_n = sample_from_distribution(Gn_input_size, [1,1]).squeeze().to(device)
+        sampling_n = sample_from_distribution(Gn_input_size, [1,1], distribution='normal').squeeze().to(device)
 
         for i in tqdm(range(args.iterations)):
             # add noise
@@ -116,13 +116,13 @@ if __name__ == '__main__':
             noise = Gn(sampling_n)
 
             out_k_r = out_k.view(-1, 1, kernel_size[0], kernel_size[1])
-
-            out_y = nn.functional.conv2d(out_x, out_k_r, bias=None) + noise
+            noise_r = noise.view(-1, 1, blurred_image_shape[0], blurred_image_shape[1])
+            out_y = nn.functional.conv2d(out_x, out_k_r, bias=None) + noise_r
 
             if i < 500:
                 total_loss = mse(out_y, blurred_image)
             else:
-                total_loss = 0.5 * (1 - ssim(out_y, blurred_image)) + 0.5 * mse(out_y, blurred_image)
+                total_loss = 1 - ssim(out_y, blurred_image)
 
             total_loss.backward()
             optimizer.step()

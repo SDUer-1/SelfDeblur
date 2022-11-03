@@ -157,9 +157,7 @@ class Noise(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(input_number, 1000, bias=True),
             nn.ReLU6(),
-            nn.Linear(1000, 10000),
-            nn.ReLU6(),
-            nn.Linear(10000, m_n * n_n),
+            nn.Linear(1000, m_n * n_n),
             nn.Sigmoid()
         )
 
